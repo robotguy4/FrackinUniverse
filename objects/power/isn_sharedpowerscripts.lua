@@ -8,37 +8,13 @@ function isn_getCurrentPowerInput()
 	local totalInput = 0
 	local connectedDevices
 	local output = 0
-	local hasPSU = false
 	local isBattery = isn_isBattery()
-		connectedDevices = isn_getAllDevicesConnectedOnNode(storage.powerInNode,"input")
-		for key, value in pairs (connectedDevices) do
-			if world.callScriptedEntity(value,"isn_canSupplyPower") or world.callScriptedEntity(value,"isn_isPowerPassthrough") then
-				output = world.callScriptedEntity(value,"isn_getCurrentPowerOutput")
-				if output ~= nil then totalInput = totalInput + output end
-			else
-			end
-		end
-	return totalInput
-end
-
-function isn_countCurrentPowerInputs()
-	if type(storage.powerInNode)~="number" then
-		return 0
-	end
-	local connectedDevices
-	local psus = 0
-	local totalInput = 0
-	local hasPSU = false
-	local hasPassthrough = false
 	connectedDevices = isn_getAllDevicesConnectedOnNode(storage.powerInNode,"input")
-	for _, value in pairs (connectedDevices) do
-		if world.callScriptedEntity(value,"isn_canSupplyPower") then
-			if world.callScriptedEntity(value,"isn_isPowerPassthrough") or world.callScriptedEntity(value, "isn_hasStoredPower") then
-				psus = psus + 1
-			end
-		end
+	for key, value in pairs (connectedDevices) do
+		output = world.callScriptedEntity(value,"isn_getCurrentPowerOutput")
+		if output ~= nil then totalInput = totalInput + output end
 	end
-	return psus
+	return totalInput
 end
 
 function isn_hasRequiredPower()
@@ -51,21 +27,17 @@ function isn_hasRequiredPower()
 	else return false end
 end
 
-function isn_requiredPowerValue(persupply)
+function isn_requiredPowerValue()
 	local req
 
 	if config.getParameter("isn_powerPassthrough") then
-		req = isn_sumPowerActiveDevicesConnectedOnOutboundNode(storage.powerOutNode)
+		req = isn_sumOutboundPowerReq()
 	else
 		req = config.getParameter("isn_requiredPower")
 	end
 	if req == nil then return nil end
 
-	local psus = 0
-	if persupply then psus = isn_countCurrentPowerInputs() end
-	if psus == nil then return nil end
-
-	return psus > 0 and req / psus or req
+	return req
 end
 
 function isn_canSupplyPower()
@@ -95,16 +67,16 @@ function isn_isBattery()
 end
 
 function isn_areActivePowerDevicesConnectedOnOutboundNode()
-	if storage.powerOutNode == nil then return false end
+	if not storage.powerOutNode then return false end
 	local devicelist = isn_getAllDevicesConnectedOnNode(storage.powerOutNode,"output")
 	if devicelist == nil then return false end
 	for _, value in pairs(devicelist) do
 		if world.callScriptedEntity(value,"isn_canRecievePower") then
-			if not world.callScriptedEntity(value,"isn_doesNotConsumePower") then
+			--if not world.callScriptedEntity(value,"isn_doesNotConsumePower") then
 				if world.callScriptedEntity(value,"isn_activeConsumption") then
 					return true
 				end
-			end
+			--end
 		end
 	end
 	return false
@@ -159,17 +131,42 @@ function isn_sumPowerActiveDevicesConnectedOnOutboundNode()
 	local batteries = 0
 	local devicelist = isn_getAllDevicesConnectedOnNode(storage.powerOutNode,"output")
 	if devicelist == nil then return 0 end
+	
+	--problem is here somewhere
 	for key, value in pairs(devicelist) do
 		if world.callScriptedEntity(value,"isn_canRecievePower") then
+		
 			if not world.callScriptedEntity(value,"isn_doesNotConsumePower") then
+			
 				if world.callScriptedEntity(value,"isn_isBattery") == true then
+					
 					if world.callScriptedEntity(value, "isn_recentlyDischarged") then batteries = batteries + 1 end
+				--here...
 				elseif world.callScriptedEntity(value,"isn_activeConsumption") then
+					sb.logInfo("%s %s",key,value)
 					local required = world.callScriptedEntity(value,"isn_requiredPowerValue", true)
+					
 					if required ~= nil then voltagecount = voltagecount + required end
+					
 				end
+				
 			end
 		end
+	end
+	return voltagecount, batteries
+end
+
+function isn_sumOutboundPowerReq()
+	if storage.powerOutNode == nil then return 0 end
+	local voltagecount = 0
+	local batteries = 0
+	local devicelist = isn_getAllDevicesConnectedOnNode(storage.powerOutNode,"output")
+	if devicelist == nil then return 0 end
+	
+	for key, value in pairs(devicelist) do
+		local required = world.callScriptedEntity(value,"isn_requiredPowerValue", true)
+		if required ~= nil then voltagecount = voltagecount + required end
+		
 	end
 	return voltagecount, batteries
 end

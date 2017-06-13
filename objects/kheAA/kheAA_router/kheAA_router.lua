@@ -22,14 +22,14 @@ function update(dt)
 	end
 	deltatime = 0;
 	storage.routerItems=world.containerItems(entity.id())
-	transferUtil.updateInputs(storage.kheAA_itemInNode);
-	transferUtil.updateOutputs(storage.kheAA_itemOutNode);
+	transferUtil.updateInputs(storage.itemInNode);
+	transferUtil.updateOutputs(storage.itemOutNode);
 	
 	if transferUtil.powerLevel(storage.logicInNode) then
 		transferUtil.routeItems();
-		object.setOutputNodeLevel(storage.kheAA_itemOutNode,util.tableSize(storage.inContainers)>0)
+		object.setOutputNodeLevel(storage.itemOutNode,util.tableSize(storage.inContainers)>0)
 	else
-		object.setOutputNodeLevel(storage.kheAA_itemOutNode,false)
+		object.setOutputNodeLevel(storage.itemOutNode,false)
 	end
 end
 

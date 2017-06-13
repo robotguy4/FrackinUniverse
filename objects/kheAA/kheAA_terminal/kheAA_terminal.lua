@@ -8,7 +8,7 @@ function init()
 end
 
 function update()
-	transferUtil.updateInputs(storage.kheAA_itemInNode)
+	transferUtil.updateInputs(storage.itemInNode)
 end
 
 function transferItem(_, _, itemData)

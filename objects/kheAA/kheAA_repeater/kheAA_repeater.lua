@@ -13,8 +13,8 @@ function update(dt)
 		return
 	end
 	deltatime=0
-	transferUtil.updateInputs(storage.kheAA_itemInNode);
-	transferUtil.updateOutputs(storage.kheAA_itemOutNode);
+	transferUtil.updateInputs(storage.itemInNode);
+	transferUtil.updateOutputs(storage.itemOutNode);
 	if storage.logicOutNode then
 		object.setOutputNodeLevel(storage.logicOutNode,util.tableSize(storage.outContainers))
 	end

@@ -11,12 +11,12 @@ redrillPosBack=nil
 node list:
 	storage.logicInNode
 	storage.logicOutNode
-	storage.kheAA_itemInNode--input to inventory network
-	storage.kheAA_itemOutNode--output to inventory network
-	storage.kheAA_liquidOutNode --used only by liquidLib
-	storage.kheAA_liquidInNode --used only by liquidLib
-	storage.kheAA_powerMiningNode--for mining objects, this is used to determine whether to dig background blocks.
-	storage.kheAA_powerPumpingNode--compression switch
+	storage.itemInNode--input to inventory network
+	storage.itemOutNode--output to inventory network
+	storage.liquidOutNode --used only by liquidLib
+	storage.liquidInNode --used only by liquidLib
+	storage.powerMiningNode--for mining objects, this is used to determine whether to dig background blocks.
+	storage.powerPumpingNode--compression switch
 ]]
 
 function excavatorCommon.init(drill,pump)
@@ -27,8 +27,8 @@ function excavatorCommon.init(drill,pump)
 	storage.isPump=(pump==true)
 	storage.isVacuum=(vacuum==true)
 	step=(step or -0.2)
-	storage.kheAA_powerMiningNode = config.getParameter("kheAA_powerMiningNode")
-	storage.kheAA_powerPumpingNode = config.getParameter("kheAA_powerPumpingNode")
+	storage.powerMiningNode = config.getParameter("kheAA_powerMiningNode")
+	storage.powerPumpingNode = config.getParameter("kheAA_powerPumpingNode")
 	storage.maxWidth = config.getParameter("kheAA_maxWidth",20);
 	storage.maxDepth=config.getParameter("kheAA_maxDepth",20);
 	storage.drillPower=config.getParameter("kheAA_drillPower",10);
@@ -279,7 +279,7 @@ function states.mine(dt)
 			end
 		end
 	end
-	if transferUtil.powerLevel(storage.kheAA_powerMiningNode,true) then
+	if transferUtil.powerLevel(storage.powerMiningNode,true) then
 		world.damageTiles({absdrillPos}, "background", absdrillPos, "plantish", storage.drillPower)
 		if world.material(absdrillPos,"background") then
 			world.damageTiles({absdrillPos}, "background", absdrillPos, "plantish", storage.drillPower)
@@ -313,7 +313,7 @@ function states.pump(dt)
 		storage.liquids[liquid[1]] = storage.liquids[liquid[1]] + liquid[2];
 	end
 	
-	if not transferUtil.powerLevel(storage.kheAA_powerPumpingNode,true) then
+	if not transferUtil.powerLevel(storage.powerPumpingNode,true) then
 		for k,v in pairs(storage.liquids) do
 			if v >= 1 then
 				local level=10^math.floor(math.log(v,10))
@@ -379,9 +379,9 @@ function states.pump(dt)
 	if world.material(transferUtil.getAbsPos({storage.facing, storage.depth - 1},storage.position), "foreground") then
 		return;
 	end
-	if world.material(transferUtil.getAbsPos({storage.facing, storage.depth - 2},storage.position), "foreground") then
+	--[[if world.material(transferUtil.getAbsPos({storage.facing, storage.depth - 2},storage.position), "foreground") then
 		return;
-	end
+	end]]
 	if liquid == nil then
 		if storage.isDrill then
 			storage.state = "moveDrill";

@@ -2,7 +2,7 @@ require "/objects/power/isn_sharedpowerscripts.lua"
 
 function init()
 	if storage.currentstoredpower == nil then storage.currentstoredpower = 0 end
-	if storage.excessCurrent == nil then storage.excessCurrent = false end
+	if storage.excessCurrent ~= nil then storage.excessCurrent = nil end
 	
 	isn_powerInit()
 end
@@ -22,16 +22,24 @@ function update(dt)
 		animator.setAnimationState("meter", tostring(powerlevel))
 	end
 
-	local powerinput = isn_getCurrentPowerInput()
-	if powerinput and powerinput >= 1 then
-		storage.currentstoredpower = storage.currentstoredpower + powerinput
+	local powerinput = dt*isn_getCurrentPowerInput()
+	storage.currentstoredpower = storage.currentstoredpower + (powerinput or 0)
+	
+	local poweroutput = isn_sumOutboundPowerReq()
+	
+	if powerinput>0 then
+		if poweroutput>0 then
+			animator.setAnimationState("status","on")
+		else
+			animator.setAnimationState("status","error")
+		end
+	else
+		animator.setAnimationState("status","off")
 	end
-	local poweroutput, batteries = isn_sumPowerActiveDevicesConnectedOnOutboundNode(storage.powerInNode)
-	storage.excessCurrent = poweroutput > storage.voltage
-	animator.setAnimationState("status", storage.excessCurrent and "error" or "on")
-	if (batteries > 0 or poweroutput > 0) and storage.currentstoredpower > 0 and not storage.excessCurrent then
-		storage.recentlyDischarged = poweroutput + batteries * isn_getCurrentPowerOutput(storage.powerInNode)
-		storage.currentstoredpower = storage.currentstoredpower - storage.recentlyDischarged
+	
+	if isn_hasStoredPower() then
+		storage.recentlyDischarged = isn_getCurrentPowerOutput()
+		storage.currentstoredpower = storage.currentstoredpower - dt*((storage.voltage/10.0)+storage.recentlyDischarged)
 	end
 
 	storage.currentstoredpower = math.min(storage.currentstoredpower, storage.powercapacity)
@@ -42,18 +50,12 @@ function isn_getCurrentPowerStorage()
 	return isn_getXPercentageOfY(storage.currentstoredpower,storage.powercapacity)
 end
 
-function isn_recentlyDischarged()
-	return storage.recentlyDischarged
-end
-
 function isn_hasStoredPower()
 	return storage.currentstoredpower > 0
 end
 
 function isn_getCurrentPowerOutput()
-	if not isn_hasStoredPower() or storage.excessCurrent then return 0 end
-	return storage.voltage
-
+	return (not isn_hasStoredPower() and 0) or storage.voltage
 end
 
 function onNodeConnectionChange()
